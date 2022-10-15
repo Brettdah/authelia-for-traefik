@@ -1,0 +1,25 @@
+---
+###############################################################
+#                         Users Database                      #
+###############################################################
+
+# This file can be used if you do not have an LDAP set up.
+
+# List of users
+users:
+  # change the next line to the user name you want to use
+  username1:
+    displayname: "User-Display Name"
+    # Password is authelia
+    password: "<encrypted password here see the doc for instruction>"  # yamllint disable-line rule:line-length
+    email: user.name@domain.tld  # a valid email to receive MFA instructions
+    groups:
+      - admins
+  # optionnaly other users in other groups or the same ;)
+  #  username2:
+  #    displayname: "User-Display Name"
+  #    # Password is authelia
+  #    password: ""  # yamllint disable-line rule:line-length
+  #    email: user.name@domain.tld ?
+  #    groups:
+  #      - guest

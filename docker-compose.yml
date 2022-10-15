@@ -1,0 +1,67 @@
+---
+version: '3.1'
+
+# I'm putting all my projects in /data/docker/<project> here authelia you sohuld change it to the path you are using !
+# in secrets
+# and the service volume
+secrets:
+  jwt:
+    file: $PWD/secrets/authelia_jwt_secret.secret
+  smtp:
+    file: $PWD/secrets/authelia_notifier_smtp_password.secret
+  duo_api:
+    file: $PWD/secrets/authelia_duo_api_secret_key.secret
+  session:
+    file: $PWD/secrets/authelia_session_secret.secret
+  redis:
+    file: $PWD/secrets/authelia_session_redis_password.secret
+
+services:
+  authelia:
+    image: authelia/authelia:4.36
+    secrets:
+      - jwt
+      - smtp
+      - duo_api
+      - session
+      - redis
+    environment:
+      - TZ=Europe/Paris
+      - AUTHELIA_JWT_SECRET_FILE=/run/secrets/jwt
+      - AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE=/run/secrets/smtp
+      - AUTHELIA_DUO_API_SECRET_KEY_FILE=/run/secrets/duo_api
+      - AUTHELIA_SESSION_SECRET_FILE=/run/secrets/session
+      - AUTHELIA_SESSION_REDIS_PASSWORD_FILE=/run/secrets/redis
+    volumes:
+      - $PWD/data/config:/config
+      # if you don't want to expose your docker socket to crowdsec use this
+      # Don't use this, if you don't use crowdsec or any fail2ban log analyser
+      # or you don't care if you expose your docker socket to another container
+      #- authelia-logs:/var/log/authelia
+    networks:
+      - proxy
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.authelia.rule=Host(`authelia.example.com`)'
+      - 'traefik.http.routers.authelia.entrypoints=https'
+      - 'traefik.http.routers.authelia.tls=true'
+      - 'traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://authelia.example.com'
+      - 'traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true'
+      - 'traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email'
+    expose:
+      - 9091
+    # internal exposure for test purpose not needed from world
+    ports:
+      - 8081:9091
+    healthcheck:
+      disable: false
+    restart: unless-stopped 
+
+networks:
+  # traefik network
+  proxy:
+    external: true
+
+# If you used the volume in the service section uncomment this
+#volumes:
+#  authelia-logs:
